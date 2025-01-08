@@ -1,19 +1,34 @@
 import { ApiData } from '../types';
 import { config } from '../config';
-import OpenAI from 'openai';
 
 export class OpenAIService {
-  private client: OpenAI;
+  private client: any;
 
   constructor() {
-    this.client = new OpenAI({
-      apiKey: config.openai.apiKey,
-      baseURL: config.openai.baseUrl,
-      dangerouslyAllowBrowser: true
-    });
+    // 延迟初始化
+    this.initClient();
+  }
+
+  private async initClient() {
+    try {
+      const OpenAI = await import('openai');
+      this.client = new OpenAI.default({
+        apiKey: config.openai.apiKey,
+        baseURL: config.openai.baseUrl,
+        dangerouslyAllowBrowser: true
+      });
+    } catch (error) {
+      console.error('Failed to initialize OpenAI client:', error);
+      throw new Error('Failed to initialize OpenAI client');
+    }
   }
 
   async generateInterface(apiData: ApiData, onProgress?: (chunk: string) => void): Promise<string> {
+    // 确保客户端已初始化
+    if (!this.client) {
+      await this.initClient();
+    }
+
     try {
       const template = localStorage.getItem('requestTemplate') || '';
       let fullContent = '';

@@ -21,7 +21,10 @@ export default defineConfig({
       build: {
         externalGlobals: {
           vue: cdn.jsdelivr('Vue', 'dist/vue.global.prod.js'),
-          openai: cdn.jsdelivr('openai', 'dist/browser.min.js')
+          openai: [
+            cdn.unpkg('openai', 'index.min.js'),
+            'OpenAI'
+          ]
         },
       },
     }),
