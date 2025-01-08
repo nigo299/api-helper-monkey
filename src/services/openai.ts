@@ -1,54 +1,28 @@
-import axios, { AxiosInstance } from 'axios';
-import { ApiData, DeepSeekResponse } from '../types';
+import { ApiData } from '../types';
 import { config } from '../config';
+import OpenAI from 'openai';
 
-export class DeepSeekService {
-  private client: AxiosInstance;
+export class OpenAIService {
+  private client: OpenAI;
 
   constructor() {
-    this.client = axios.create({
-      baseURL: config.deepseek.baseUrl,
-      headers: {
-        'Authorization': `Bearer ${config.deepseek.apiKey}`,
-        'Content-Type': 'application/json'
-      }
+    this.client = new OpenAI({
+      apiKey: config.openai.apiKey,
+      baseURL: config.openai.baseUrl,
+      dangerouslyAllowBrowser: true
     });
-
-    // 添加请求拦截器
-    this.client.interceptors.request.use(
-      (config) => {
-        return config;
-      },
-      (error) => {
-        console.warn('Request error:', error);
-        return Promise.reject(error);
-      }
-    );
-
-    // 添加响应拦截器
-    this.client.interceptors.response.use(
-      (response) => {
-        return response;
-      },
-      (error) => {
-        // 避免修改错误对象的只读属性
-        const errorInfo = {
-          status: error?.response?.status,
-          message: error?.message,
-          data: error?.response?.data
-        };
-        console.warn('Response error:', errorInfo);
-        return Promise.reject(errorInfo);
-      }
-    );
   }
 
-  async generateInterface(apiData: ApiData): Promise<string> {
+  async generateInterface(apiData: ApiData, onProgress?: (chunk: string) => void): Promise<string> {
     try {
       const template = localStorage.getItem('requestTemplate') || '';
+      let fullContent = '';
 
-      const response = await this.client.post<DeepSeekResponse>('', {
-        model: config.deepseek.model,
+      const stream = await this.client.chat.completions.create({
+        model: config.openai.model,
+        temperature: config.openai.temperature,
+        max_tokens: config.openai.maxTokens,
+        stream: true,
         messages: [
           {
             role: 'system',
@@ -101,12 +75,20 @@ ${template}
 4. 请求方式必须与模板保持一致（如get、post等）
 5. 确保生成的每个接口和字段都有完整的JSDoc注释`
           }
-        ],
-        temperature: 0,
-        max_tokens: 5000
+        ]
       });
 
-      return response.data.choices[0].message.content;
+      for await (const chunk of stream) {
+        const content = chunk.choices[0]?.delta?.content || '';
+        fullContent += content;
+
+        // 如果提供了进度回调，则调用它
+        if (onProgress && content) {
+          onProgress(content);
+        }
+      }
+
+      return fullContent;
     } catch (error) {
       console.warn('Generate interface error:', error);
       throw error;
@@ -114,5 +96,4 @@ ${template}
   }
 }
 
-export const deepSeekService = new DeepSeekService();
-
+export const openAIService = new OpenAIService();

@@ -50,7 +50,7 @@
 <script setup lang="ts">
 import { ref, onMounted, onUnmounted } from 'vue'
 import { createEditor } from '../editor-config'
-import { deepSeekService } from '../services/deepseek'
+import { openAIService } from '../services/openai'
 import type { ApiData } from '../types'
 
 const hasApiData = ref(false)
@@ -93,7 +93,7 @@ const showModal = (title: string, code: string) => {
       }
       editor = createEditor(editorContainer.value, {
         content: code,
-        language: 'javascript',
+        language: 'typescript',
         readOnly: true
       })
       if (!editor) {
@@ -200,6 +200,13 @@ const debounce = (fn: Function, delay: number) => {
   }
 }
 
+// 更新编辑器内容
+const updateEditorContent = (content: string) => {
+  if (editor) {
+    editor.setValue(content)
+  }
+}
+
 // 防抖处理的生成接口函数
 const debouncedGenerateInterface = debounce(async () => {
   if (!apiData.value || isLoading.value) {
@@ -220,14 +227,21 @@ const debouncedGenerateInterface = debounce(async () => {
     }
 
     statusMessage.value = '正在生成接口定义...'
-    const code = await deepSeekService.generateInterface(apiData.value)
+    let currentCode = ''
+
+    // 显示模态框，准备接收流式内容
+    showModal('生成的接口定义', '')
+
+    const code = await openAIService.generateInterface(apiData.value, (chunk) => {
+      currentCode += chunk
+      updateEditorContent(currentCode)
+    })
 
     // 保存生成的内容、API数据和模板
     lastGeneratedCode.value = code
     lastApiData.value = currentApiData
     lastTemplate.value = currentTemplate
 
-    showModal('生成的接口定义', code)
     statusMessage.value = '接口定义生成成功'
   } catch (error) {
     console.error('生成接口定义失败:', error)
