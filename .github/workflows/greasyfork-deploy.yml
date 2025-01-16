@@ -1,0 +1,49 @@
+name: Deploy to GreasyFork
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'src/**'
+      - 'package.json'
+      - 'vite.config.ts'
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: latest
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Build
+        run: pnpm build
+
+      - name: Update GreasyFork
+        env:
+          GREASYFORK_ACCESS_TOKEN: ${{ secrets.GREASYFORK_ACCESS_TOKEN }}
+        run: |
+          SCRIPT_PATH=$(find dist -name "*.user.js" -type f)
+          if [ -z "$SCRIPT_PATH" ]; then
+            echo "No userscript found in dist directory"
+            exit 1
+          fi
+          
+          curl -X POST \
+            -H "Accept: application/json" \
+            -H "Authorization: Token $GREASYFORK_ACCESS_TOKEN" \
+            -F "script_versions[][code]=<$SCRIPT_PATH" \
+            "https://greasyfork.org/en/scripts/523101/versions"
