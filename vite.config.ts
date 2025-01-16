@@ -10,7 +10,7 @@ export default defineConfig({
       entry: 'src/main.ts',
       userscript: {
         name: 'Swagger API Helper',
-        version: '1.0.19',
+        version: '1.0.21',
         description: 'Enhanced Swagger Documentation Helper - 自动生成 TypeScript 接口定义的增强工具',
         author: 'Nigo',
         icon: 'https://vitejs.dev/logo.svg',
