@@ -45,7 +45,8 @@ export class OpenAIService {
 请严格遵循以下规则：
 1. 只输出TypeScript代码，不要包含任何其他解释性文字
 2. 不要使用\`\`\`typescript这样的标记
-3. 生成三个部分：
+3. 常用的 TypeScript 编码规范和最佳实践。
+4. 生成三个部分：
    - [接口名]Request：请求参数接口
    - [中间的所有相关接口]：如果有嵌套类型，需要定义为独立接口
    - [接口名]Response：响应数据接口
